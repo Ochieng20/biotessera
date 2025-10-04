@@ -55,16 +55,16 @@ def initialize_agent(_vector_db):
     You have access to the following tools:
     {tools}
 
-    To answer the user's question, you must use the following format:
+    Use the following format. Do not write the final answer in the Thought block.
 
     Question: the user's input question
-    Thought: you should always think about what to do. What is the user asking for? Do I need to use one tool or multiple tools?
+    Thought: I need to break down the user's question and decide which tools to use. I will execute all necessary tool calls before forming a final answer.
     Action: the action to take, should be one of [{tool_names}]
     Action Input: the input to the action
     Observation: the result of the action
     ... (this Thought/Action/Action Input/Observation can repeat N times)
-    Thought: I now know the final answer based on the observations.
-    Final Answer: the final, comprehensive, and well-formatted answer to the original user question, with citations.
+    Thought: I have gathered all necessary information and I am ready to give the final answer.
+    Final Answer: [The final, comprehensive, markdown-formatted answer to the original question, with citations.]
 
     Begin!
 
@@ -74,7 +74,12 @@ def initialize_agent(_vector_db):
     agent_prompt = PromptTemplate.from_template(prompt_template)
 
     biotessera_agent = create_react_agent(llm, tools, agent_prompt)
-    agent_executor = AgentExecutor(agent=biotessera_agent, tools=tools, verbose=True)
+    agent_executor = AgentExecutor(
+        agent=biotessera_agent,
+        tools=tools,
+        verbose=True,
+        handle_parsing_errors=True
+    )
 
     print("✅ Agent Executor created. Biotessera is ready!")
     return agent_executor

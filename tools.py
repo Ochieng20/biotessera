@@ -6,8 +6,9 @@ from langchain_core.tools import Tool
 
 # --- Tool 1: TesseraMiner ---
 def search_knowledge_base(query: str, vector_db) -> str:
-    """Searches the TesseraStore for relevant text chunks based on a query."""
-    results = vector_db.similarity_search(query, k=5)
+    """Searches the TesseraStore for relevant and diverse text chunks using MMR."""
+    retriever = vector_db.as_retriever(search_type="mmr", search_kwargs={'k': 5, 'fetch_k': 20})
+    results = retriever.invoke(query)
     return "\n---\n".join([f"Source: {doc.metadata.get('title', 'N/A')}\nContent: {doc.page_content}" for doc in results])
 
 # --- Tool 2: DataFinder ---
