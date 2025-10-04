@@ -6,7 +6,6 @@ import streamlit as st
 # --- LangChain Imports ---
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
-from langchain_core.tools import Tool
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 import google.generativeai as genai
@@ -31,6 +30,7 @@ def load_knowledge_base():
         return vector_db
     except Exception as e:
         print(f"❌ Error loading TesseraStore: {e}")
+        st.error(f"❌ Error loading TesseraStore: {e}")
         return None
     
 @st.cache_resource
@@ -42,6 +42,7 @@ def initialize_agent(_vector_db):
         genai.configure(api_key=GOOGLE_API_KEY)
     except KeyError:
         print("❌ Error: GOOGLE_API_KEY not found.")
+        st.error("❌ Error: GOOGLE_API_KEY not found in secrets.")
         return None
     
     tools = get_tools(_vector_db)
@@ -77,7 +78,8 @@ def initialize_agent(_vector_db):
         agent=biotessera_agent,
         tools=tools,
         verbose=True,
-        handle_parsing_errors=True
+        handle_parsing_errors=True,
+        max_iterations=4
     )
 
     print("✅ Agent Executor created. Biotessera is ready!")
