@@ -106,9 +106,24 @@ if prompt := st.chat_input("Ask a question about space biology..."):
     with st.chat_message("assistant"):
         with st.spinner("Biotessera is thinking..."):
             if agent_executor:
+                agent_executor.return_intermediate_steps = True
+                
                 response = agent_executor.invoke({"input": prompt})
                 response_text = response.get('output', "Sorry, I encountered an error.")
+                
                 st.markdown(response_text)
+                
+                if 'intermediate_steps' in response and response['intermediate_steps']:
+                    with st.expander("🤖 Show Agent's Thought Process"):
+                        for step in response['intermediate_steps']:
+                            action = step[0]
+                            observation = step[1]
+                            st.markdown(f"**Action:** `{action.tool}`")
+                            st.markdown(f"**Action Input:** `{action.tool_input}`")
+                            st.markdown(f"**Observation:**")
+                            st.text(observation)
+                            st.divider()
+
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
             else:
-                st.error("Agent could not be initialized. Please check your API key and configuration.")
+                st.error("Agent could not be initialized.")

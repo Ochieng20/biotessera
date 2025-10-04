@@ -30,6 +30,7 @@ Biotessera acts as an intelligent research assistant. It uses a multi-agent arch
 * **AI/ML:** LangChain, Google Gemini (LLM & Embeddings)
 * **Vector Database:** ChromaDB
 * **Data Processing:** Pandas, BeautifulSoup
+* **UI:** Streamlit
 
 ## 🚀 How to Run
 
@@ -50,7 +51,7 @@ Biotessera acts as an intelligent research assistant. It uses a multi-agent arch
     * Add your Google AI API key to it: `GOOGLE_API_KEY="YOUR_API_KEY_HERE"`
 4.  **Run the application:**
     ```bash
-    python app.py
+    streamlit run app.py
     ```
 
 ## 🛰️ NASA Data & Resources Used
