@@ -1,12 +1,14 @@
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import google.generativeai as genai
 
 # --- SETTINGS ---
 load_dotenv()
-PERSIST_DIR = 'tesserastore_db' # Folder with persisted vector DB
+ROOT_DIR = Path(__file__).parent.parent
+PERSIST_DIR = ROOT_DIR / 'tesserastore_db'
 
 try:
     GOOGLE_API_KEY = os.environ['GOOGLE_API_KEY']
