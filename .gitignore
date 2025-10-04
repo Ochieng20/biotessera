@@ -1,0 +1,14 @@
+# Virtual environment
+venv/
+*.venv
+
+# Secrets
+.env
+
+# Data
+data/
+tesserastore_db/
+
+# Cache
+__pycache__/
+*.pyc
