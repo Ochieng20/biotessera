@@ -47,13 +47,51 @@ def search_knowledge_base(query: str) -> str:
     results = vector_db.similarity_search(query)
     return "\n---\n".join([f"Source: {doc.metadata.get('title', 'N/A')}\nContent: {doc.page_content}" for doc in results])
 
+def search_osdr_database(query: str) -> str:
+    """Searches the NASA Open Science Data Repository (OSDR) for raw datasets."""
+    print(f"\n🔎 DataFinder searching OSDR for: '{query}'")
+    
+    base_url = "https://osdr.nasa.gov/bio/repo/search?q="
+    search_url = base_url + urllib.parse.quote_plus(query)
+    
+    try:
+        headers = {'User-Agent': 'NASA Space Apps Participant Bot'}
+        response = requests.get(search_url, headers=headers, timeout=15)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Finding a results card
+        results = soup.find_all('div', class_='search-result-row-inner')
+        if not results:
+            return "No datasets found in OSDR for this query."
+            
+        found_datasets = []
+        for res in results[:3]: # Take the first 3 results
+            title_tag = res.find('a')
+            title = title_tag.text.strip() if title_tag else "No title found"
+            link = "https://osdr.nasa.gov" + title_tag['href'] if title_tag and title_tag.has_attr('href') else "No link found"
+            found_datasets.append(f"Title: {title}\nLink: {link}")
+        
+        return "\n---\n".join(found_datasets)
+        
+    except requests.exceptions.RequestException as e:
+        return f"Error connecting to OSDR: {e}"
+    except Exception as e:
+        return f"An unexpected error occurred while searching OSDR: {e}"
+
 tessera_miner_tool = Tool(
     name="TesseraMiner",
     func=search_knowledge_base,
-    description="Use this tool to search for information about space biology, microgravity effects, and related scientific research. The query should be a detailed question in English."
+    description="Use this tool to search scientific publications for information about space biology, microgravity effects, and experimental results. The query should be a detailed question in English."
 )
 
-tools = [tessera_miner_tool]
+data_finder_tool = Tool(
+    name="DataFinder",
+    func=search_osdr_database,
+    description="Use this tool to find raw datasets in the NASA Open Science Data Repository (OSDR). The query should be a simple keyword or project name, for example 'Bion-M1' or 'osteoclast'."
+)
+
+tools = [tessera_miner_tool, data_finder_tool]
 print(f"✅ Tools initialized: {[tool.name for tool in tools]}")
 
 # --- 2. INITIALIZE THE AGENT'S BRAIN (LLM) ---
@@ -61,24 +99,24 @@ llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.2)
 print(f"✅ Main LLM (Gemini) initialized.")
 
 # --- 3. CREATE THE AGENT PROMPT ---
-# Это инструкция, которая говорит агенту, кто он и как ему себя вести
 prompt_template = """
 You are a specialized AI assistant for NASA called Biotessera.
 Your task is to answer questions about space biology based *only* on the information provided by your tools.
-You have access to the following tools:
+When you find information, you MUST cite your sources. For TesseraMiner, cite the 'Source' title. For DataFinder, provide the 'Title' and 'Link'.
 
+You have access to the following tools:
 {tools}
 
 To answer the user's question, you must use the following format:
 
 Question: the user's input question
-Thought: you should always think about what to do. What is the user asking for?
+Thought: you should always think about what to do. What is the user asking for? Do I need to use one tool or multiple tools?
 Action: the action to take, should be one of [{tool_names}]
 Action Input: the input to the action
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer based on the observations.
-Final Answer: the final, comprehensive, and well-formatted answer to the original user question.
+Final Answer: the final, comprehensive, and well-formatted answer to the original user question, with citations.
 
 Begin!
 
@@ -96,8 +134,8 @@ print("✅ Agent Executor created. Biotessera is ready!")
 
 # --- 5. RUN A TEST ---
 if __name__ == '__main__':
-    print("\n--- Running a test query on the full agent ---")
-    test_query = "What is the effect of microgravity on bone loss?"
+    print("\n--- Running a complex test query on the full agent ---")
+    test_query = "Summarize the effects of microgravity on bone loss and check if there are any datasets related to 'Bion-M1' in OSDR."
     
     response = agent_executor.invoke({
         "input": test_query
