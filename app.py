@@ -39,41 +39,22 @@ PERSIST_DIR = ROOT_DIR / 'tesserastore_db'
 print(f"🔄 Loading TesseraStore from: {PERSIST_DIR}")
 ZIP_PATH = ROOT_DIR / 'tesserastore_db.zip'
 
-GOOGLE_DRIVE_FILE_ID = "1qyy8frw4AM7lGjtsLIkMnhNrqLSuzxUg"
-
-def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download&id=" + id
-    session = requests.Session()
-    response = session.get(URL, stream=True)
-    token = get_confirm_token(response)
-    if token:
-        params = {'id': id, 'confirm': token}
-        response = session.get(URL, params=params, stream=True)
-    save_response_content(response, destination)
-
-def get_confirm_token(response):
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            return value
-    return None
-
-def save_response_content(response, destination):
-    CHUNK_SIZE = 32768
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(CHUNK_SIZE):
-            if chunk:
-                f.write(chunk)
+DOWNLOAD_URL = "https://huggingface.co/datasets/vero-code/biotessera-database/resolve/main/tesserastore_db.zip"
 
 if not PERSIST_DIR.exists():
-    with st.spinner(f"One-time setup: Downloading knowledge base..."):
-        download_file_from_google_drive(GOOGLE_DRIVE_FILE_ID, ZIP_PATH)
+    with st.spinner(f"One-time setup: Downloading knowledge base (445MB)..."):
+        response = requests.get(DOWNLOAD_URL, stream=True)
+        response.raise_for_status()
+        with open(ZIP_PATH, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
     
     with st.spinner("Unpacking knowledge base..."):
         with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
             zip_ref.extractall(ROOT_DIR)
         os.remove(ZIP_PATH)
 
-    st.success("Knowledge base is ready! The app will now load.")
+    st.success("Knowledge base is ready! The app is reloading.")
     st.rerun()
 
 # --- 4. LOAD THE KNOWLEDGE BASE ---
