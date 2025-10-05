@@ -34,6 +34,14 @@ Biotessera acts as an intelligent research assistant. It uses a multi-agent arch
 * **Data Processing:** Pandas, BeautifulSoup
 * **UI:** Streamlit
 
+## ☁️ Data Hosting
+
+The vector database for this project (`tesserastore_db`) is approximately 808 MB, which exceeds GitHub's file size limits. To ensure the live Streamlit application can be deployed, the database is compressed and hosted on **Hugging Face Datasets**.
+
+* **Dataset Link:** [vero-code/biotessera-database](https://huggingface.co/datasets/vero-code/biotessera-database)
+
+The application automatically downloads and unpacks this database on its first run in a new environment.
+
 ## 🚀 How to Run
 
 1.  **Clone the repository:**
