@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import streamlit as st
+import urllib.parse
+import requests
+from bs4 import BeautifulSoup
 
 # --- LangChain Imports ---
 from langchain.agents import AgentExecutor, create_react_agent
@@ -53,13 +56,14 @@ def load_vector_db():
 
 vector_db, load_message = load_vector_db()
 st.info(load_message)
-
 if vector_db is None:
-    st.stop()
+    st.warning("TesseraMiner will be disabled.")
 
 # --- 5. DEFINE TOOLS ---
 def search_knowledge_base(query: str) -> str:
     """Searches the TesseraStore for relevant and diverse text chunks using MMR."""
+    if vector_db is None:
+        return "TesseraMiner is disabled: Vector DB not available."
     retriever = vector_db.as_retriever(
         search_type="mmr",
         search_kwargs={'k': 5, 'fetch_k': 20}
@@ -69,14 +73,36 @@ def search_knowledge_base(query: str) -> str:
         return "No information found in TesseraStore for this query."
     return "\n---\n".join([f"Source: {doc.metadata.get('title', 'N/A')}\nContent: {doc.page_content}" for doc in results])
 
+def search_osdr_database(query: str) -> str:
+    """Searches the NASA Open Science Data Repository (OSDR) for raw datasets."""
+    base_url = "https://osdr.nasa.gov/bio/repo/search?q="
+    search_url = base_url + urllib.parse.quote_plus(query)
+    try:
+        headers = {'User-Agent': 'NASA Space Apps Participant Bot'}
+        response = requests.get(search_url, headers=headers, timeout=15)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        results = soup.find_all('div', class_='search-result-row-inner')
+        if not results:
+            return "No datasets found in OSDR for this query."
+        found_datasets = []
+        for res in results[:3]:
+            title_tag = res.find('a')
+            if title_tag:
+                title = title_tag.text.strip()
+                link = "https://osdr.nasa.gov" + (title_tag['href'] if title_tag.has_attr('href') else '')
+                found_datasets.append(f"Title: {title}\nLink: {link}")
+        return "\n---\n".join(found_datasets) if found_datasets else "No datasets found in OSDR for this query."
+    except requests.exceptions.RequestException as e:
+        return f"Error connecting to OSDR: {e}"
+    except Exception as e:
+        return f"An unexpected error occurred while searching OSDR: {e}"
+
 tessera_miner_tool = Tool(
     name="TesseraMiner",
     func=search_knowledge_base,
     description="Use this tool to search for information about space biology, microgravity effects, and related scientific research. The query should be a detailed question in English."
 )
-
-tools = [tessera_miner_tool]
-print(f"✅ Tools initialized: {[tool.name for tool in tools]}")
 
 # --- 6. INITIALIZE THE AGENT'S BRAIN (LLM) ---
 @st.cache_resource(show_spinner="Building AI agent...")
@@ -84,18 +110,26 @@ def build_agent_executor():
     """Builds the LangChain agent and executor."""
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.1)
 
-    tools = [
-        Tool(
+    tools = []
+    if vector_db is not None:
+        tools.append(Tool(
             name="TesseraMiner",
             func=search_knowledge_base,
-            description="Use this tool to search for information about space biology, microgravity effects, and related scientific research. The query should be a detailed question in English."
-        )
-    ]
+            description="Use this tool to search scientific publications for information about space biology, microgravity effects, and experimental results. The query should be a detailed question in English."
+        ))
+    tools.append(Tool(
+        name="DataFinder",
+        func=search_osdr_database,
+        description="Use this tool to find raw datasets in the NASA Open Science Data Repository (OSDR). The query should be a simple keyword or project name, for example 'Bion-M1' or 'proteomics'."
+    ))
+    print(f"✅ Tools initialized: {[tool.name for tool in tools]}")
 
     prompt_template = """
     You are a specialized AI assistant for NASA called Biotessera.
     Your task is to answer questions about space biology based *only* on the information provided by your tools.
-    **Crucially, you MUST cite the 'Source' for any information you find. If you use a tool and the results seem repetitive, STOP and proceed to the Final Answer.**
+    Think step-by-step. If the user asks for both research and datasets, use the appropriate tool for each part of the query.
+    ***VERY IMPORTANT RULE***: If you find yourself using the exact same tool with the exact same input twice in a row, you are stuck in a loop. You MUST either try a different tool or significantly change your Action Input. Do not repeat the same action again.
+    **Crucially, you MUST cite your sources. For TesseraMiner, cite the 'Source' title. For DataFinder, provide the 'Title' and 'Link'.**
 
     You have access to the following tools:
     {tools}
@@ -107,6 +141,7 @@ def build_agent_executor():
     Action: the action to take, should be one of [{tool_names}]
     Action Input: the input to the action
     Observation: the result of the action
+    ... (this Thought/Action/Action Input/Observation can repeat N times)
     Thought: I now know the final answer based on the observations.
     Final Answer: the final, comprehensive, and well-formatted answer to the original user question, with citations.
 
@@ -124,14 +159,16 @@ def build_agent_executor():
         agent=agent,
         tools=tools,
         verbose=False,
-        max_iterations=4,
+        max_iterations=8,
         early_stopping_method="force",
         handle_parsing_errors=True,
         return_intermediate_steps=True # Key for showing agent's thoughts
     )
-    return executor
+    return executor, [tool.name for tool in tools]
 
-agent_executor = build_agent_executor()
+agent_executor, available_tools = build_agent_executor()
+st.sidebar.title("Agent Status")
+st.sidebar.success(f"Agent is ready with tools: {', '.join(available_tools)}")
 
 # --- 8. CHAT INTERFACE ---
 if "messages" not in st.session_state:
@@ -172,15 +209,3 @@ if prompt := st.chat_input("Ask your question about space biology..."):
                     st.divider()
 
     st.session_state.messages.append({"role": "assistant", "content": response_text})
-
-# --- RUN A TEST ---
-# if __name__ == '__main__':
-#     print("\n--- Running a test query on the full agent ---")
-#     test_query = "What is the effect of microgravity on bone loss?"
-    
-#     response = agent_executor.invoke({
-#         "input": test_query
-#     })
-
-#     print("\n--- Agent's Final Answer ---")
-#     print(response['output'])
