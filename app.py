@@ -5,6 +5,8 @@ import streamlit as st
 import urllib.parse
 import requests
 from bs4 import BeautifulSoup
+import zipfile
+import requests
 
 # --- LangChain Imports ---
 from langchain.agents import AgentExecutor, create_react_agent
@@ -35,6 +37,44 @@ except KeyError:
 ROOT_DIR = Path(__file__).parent
 PERSIST_DIR = ROOT_DIR / 'tesserastore_db'
 print(f"🔄 Loading TesseraStore from: {PERSIST_DIR}")
+ZIP_PATH = ROOT_DIR / 'tesserastore_db.zip'
+
+GOOGLE_DRIVE_FILE_ID = "1qyy8frw4AM7lGjtsLIkMnhNrqLSuzxUg"
+
+def download_file_from_google_drive(id, destination):
+    URL = "https://docs.google.com/uc?export=download&id=" + id
+    session = requests.Session()
+    response = session.get(URL, stream=True)
+    token = get_confirm_token(response)
+    if token:
+        params = {'id': id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
+    save_response_content(response, destination)
+
+def get_confirm_token(response):
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+    return None
+
+def save_response_content(response, destination):
+    CHUNK_SIZE = 32768
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk:
+                f.write(chunk)
+
+if not PERSIST_DIR.exists():
+    with st.spinner(f"One-time setup: Downloading knowledge base..."):
+        download_file_from_google_drive(GOOGLE_DRIVE_FILE_ID, ZIP_PATH)
+    
+    with st.spinner("Unpacking knowledge base..."):
+        with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
+            zip_ref.extractall(ROOT_DIR)
+        os.remove(ZIP_PATH)
+
+    st.success("Knowledge base is ready! The app will now load.")
+    st.rerun()
 
 # --- 4. LOAD THE KNOWLEDGE BASE ---
 @st.cache_resource(show_spinner="Loading knowledge base (TesseraStore)...")
