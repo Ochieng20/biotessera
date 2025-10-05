@@ -1,8 +1,8 @@
 # 🧩 Biotessera: A Space Biology Knowledge Engine
 
-Biotessera is an AI-powered agent system developed for the [**NASA Space Apps Challenge 2025**](https://www.spaceappschallenge.org/2025/find-a-team/biotessera/). It transforms hundreds of NASA publications on space biology into a navigable and interactive knowledge mosaic, enabling scientists and mission planners to find precise, synthesized answers backed by source data.
+Biotessera is an AI-powered agent system developed for the [**NASA Space Apps Challenge 2025**](https://www.spaceappschallenge.org/2025/find-a-team/biotessera/?tab=project). It transforms hundreds of NASA publications on space biology into a navigable and interactive knowledge mosaic, enabling scientists and mission planners to find precise, synthesized answers backed by source data.
 
-![Biotessera Architecture](docs/architecture.png)
+[![Watch the Biotessera Demo Video](https://img.youtube.com/vi/NQtkSH8YOfw/0.jpg)](https://www.youtube.com/watch?v=NQtkSH8YOfw)
 
 ## 🎯 The Problem
 
@@ -10,10 +10,12 @@ NASA's decades of space biology research represent a vast and invaluable resourc
 
 ## 💡 The Solution
 
+![Biotessera Architecture](docs/architecture.png)
+
 Biotessera acts as an intelligent research assistant. It uses a multi-agent architecture (Coordinator/Worker pattern) to address this challenge:
 1.  **Data Preparation:** An offline pipeline processes 607 full-text publications, extracts metadata, and generates vector embeddings for every text fragment (a "tessera"). These are stored in a local vector database (`TesseraStore`).
 2.  **Retrieval:** The main agent, `TesseraConductor`, receives a user's question and delegates tasks to specialized tools:
-    * **`TesseraMiner`**: Searches the local `TesseraStore` for the most relevant text fragments from the 607 publications.
+    * **`TesseraMiner`**: Searches the local `TesseraStore` for the most relevant **and diverse** text fragments from the 607 publications, utilizing **Maximal Marginal Relevance (MMR)** for enhanced result quality.
     * **`DataFinder`**: Performs real-time searches on the NASA Open Science Data Repository (OSDR) to find related raw datasets.
 3.  **Synthesis:** The `TesseraConductor` gathers all retrieved information and uses a Large Language Model (LLM) to generate a single, coherent, and sourced answer.
 
