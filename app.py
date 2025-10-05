@@ -63,6 +63,7 @@ def search_knowledge_base(query: str) -> str:
     )
 
 def search_osdr_database(query: str) -> str:
+    print(f"\n🔎 DataFinder searching OSDR for: '{query}'")
     base_url = "https://osdr.nasa.gov/bio/repo/search?q="
     search_url = base_url + urllib.parse.quote_plus(query)
     try:
@@ -144,7 +145,7 @@ Thought:{agent_scratchpad}
         tools=_tools,
         verbose=False,
         handle_parsing_errors=True,
-        return_intermediate_steps=False,
+        return_intermediate_steps=True,
         max_iterations=4,
         early_stopping_method="generate",
     )
@@ -176,11 +177,43 @@ if prompt:
     tool_calls["DataFinder"] = 0
 
     with st.chat_message("assistant"):
+        steps = []
         with st.spinner("Biotessera is thinking..."):
             try:
                 resp = agent_executor.invoke({"input": prompt})
                 text = resp.get("output", "Sorry, an error occurred.")
+                steps = resp.get("intermediate_steps", [])
             except Exception as e:
                 text = f"❌ Agent error: {e}"
+                steps = []
             st.markdown(text)
+
+            if steps:
+                tools_used = [getattr(a, "tool", "unknown") for (a, _) in steps]
+                if tools_used:
+                    used_str = ", ".join(tools_used)
+                    st.info(f"🧠 Tools used in reasoning: {used_str}")
+                else:
+                    st.info("🧠 Tools used in reasoning: —")
+
+                if "DataFinder" not in tools_used:
+                    st.warning("DataFinder was not called in this run. (Model may have decided that there were enough publications.)")
+
+                import re
+                def sanitize(s: str) -> str:
+                    if not isinstance(s, str):
+                        return str(s)
+                    return re.sub(r"(?im)^\s*thought\s*:.*$", "[redacted thought]", s)
+
+                with st.expander("🧭 Agent Workflow (tools & observations)"):
+                    for i, (action, observation) in enumerate(steps, 1):
+                        tool_name = getattr(action, "tool", "unknown")
+                        tool_input = sanitize(getattr(action, "tool_input", ""))
+                        st.markdown(f"**Step {i}: {tool_name}**")
+                        if tool_input:
+                            st.code(str(tool_input), language="text")
+                        obs_str = observation if isinstance(observation, str) else str(observation)
+                        st.text(obs_str)
+                        st.divider()
+
             st.session_state.messages.append({"role": "assistant", "content": text})
