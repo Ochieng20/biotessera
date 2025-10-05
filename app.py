@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import streamlit as st
 import urllib.parse
 import requests
 from bs4 import BeautifulSoup
@@ -13,136 +14,173 @@ from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 import google.generativeai as genai
 
-# --- SETUP AND CONFIGURATION ---
+# --- SETUP ---
 load_dotenv()
-print("🚀 Biotessera Agent is starting up...")
+st.set_page_config(page_title="Biotessera (Test)", page_icon="🧩")
+st.title("🧩 Biotessera (Minimal Test)")
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    st.error("❌ Error: Environment variable GOOGLE_API_KEY not found.")
+    st.stop()
 
 try:
-    GOOGLE_API_KEY = os.environ['GOOGLE_API_KEY']
     genai.configure(api_key=GOOGLE_API_KEY)
-    print("✅ Google AI API key is configured.")
-except KeyError:
-    print("❌ Error: Environment variable GOOGLE_API_KEY not found.")
-    exit()
-
-# --- DATA PATHS (using pathlib) ---
-ROOT_DIR = Path(__file__).parent
-PERSIST_DIR = ROOT_DIR / 'tesserastore_db'
-print(f"🔄 Loading TesseraStore from: {PERSIST_DIR}")
-
-# --- LOAD THE KNOWLEDGE BASE ---
-try:
-    embedding_function = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    vector_db = Chroma(
-        persist_directory=str(PERSIST_DIR),
-        embedding_function=embedding_function
-    )
-    print("✅ TesseraStore loaded successfully!")
-    print(f"   Number of items in DB: {vector_db._collection.count()}")
-
 except Exception as e:
-    print(f"❌ Error loading TesseraStore: {e}")
-    exit()
+    st.error(f"❌ Failed to configure Google Generative AI: {e}")
+    st.stop()
 
-# --- 1. DEFINE TOOLS (our "Worker Agents") ---
+ROOT_DIR = Path(__file__).parent
+PERSIST_DIR = ROOT_DIR / "tesserastore_db"
+st.caption(f"🔄 TesseraStore path: `{PERSIST_DIR}`")
+
+# --- CACHED RESOURCES ---
+@st.cache_resource(show_spinner=False)
+def load_vector_db(persist_dir: Path):
+    if not persist_dir.exists():
+        return None, "⚠️ Vector database folder not found, TesseraMiner will be disabled."
+    try:
+        embedding_function = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        vectordb = Chroma(
+            persist_directory=str(persist_dir),
+            embedding_function=embedding_function
+        )
+        ok = f"✅ TesseraStore loaded. Items: {vectordb._collection.count()}"
+        return vectordb, ok
+    except Exception as e:
+        return None, f"❌ TesseraStore loading error: {e}"
+
+vector_db, load_msg = load_vector_db(PERSIST_DIR)
+st.write(load_msg)
+
+# --- TOOLS ---
 def search_knowledge_base(query: str) -> str:
-    """Searches the TesseraStore for relevant text chunks based on a query."""
+    if vector_db is None:
+        return "TesseraMiner disabled: vector DB not available."
     results = vector_db.similarity_search(query)
-    return "\n---\n".join([f"Source: {doc.metadata.get('title', 'N/A')}\nContent: {doc.page_content}" for doc in results])
+    return "\n---\n".join(
+        [f"Source: {doc.metadata.get('title', 'N/A')}\nContent: {doc.page_content}" for doc in results]
+    )
 
 def search_osdr_database(query: str) -> str:
-    """Searches the NASA Open Science Data Repository (OSDR) for raw datasets."""
-    print(f"\n🔎 DataFinder searching OSDR for: '{query}'")
-    
     base_url = "https://osdr.nasa.gov/bio/repo/search?q="
     search_url = base_url + urllib.parse.quote_plus(query)
-    
     try:
-        headers = {'User-Agent': 'NASA Space Apps Participant Bot'}
+        headers = {"User-Agent": "NASA Space Apps Participant Bot"}
         response = requests.get(search_url, headers=headers, timeout=15)
         response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Finding a results card
-        results = soup.find_all('div', class_='search-result-row-inner')
+        soup = BeautifulSoup(response.text, "html.parser")
+        results = soup.find_all("div", class_="search-result-row-inner")
         if not results:
             return "No datasets found in OSDR for this query."
-            
-        found_datasets = []
-        for res in results[:3]: # Take the first 3 results
-            title_tag = res.find('a')
+        found = []
+        for res in results[:3]:
+            title_tag = res.find("a")
             title = title_tag.text.strip() if title_tag else "No title found"
-            link = "https://osdr.nasa.gov" + title_tag['href'] if title_tag and title_tag.has_attr('href') else "No link found"
-            found_datasets.append(f"Title: {title}\nLink: {link}")
-        
-        return "\n---\n".join(found_datasets)
-        
+            link = "https://osdr.nasa.gov" + title_tag["href"] if title_tag and title_tag.has_attr("href") else "No link found"
+            found.append(f"Title: {title}\nLink: {link}")
+        return "\n---\n".join(found)
     except requests.exceptions.RequestException as e:
         return f"Error connecting to OSDR: {e}"
     except Exception as e:
         return f"An unexpected error occurred while searching OSDR: {e}"
 
-tessera_miner_tool = Tool(
-    name="TesseraMiner",
-    func=search_knowledge_base,
-    description="Use this tool to search scientific publications for information about space biology, microgravity effects, and experimental results. The query should be a detailed question in English."
-)
+MAX_TOOL_CALLS = 3
+tool_calls = {"TesseraMiner": 0, "DataFinder": 0}
 
-data_finder_tool = Tool(
+def tool_guard(name, fn):
+    def wrapped(q: str):
+        tool_calls[name] += 1
+        if tool_calls[name] > MAX_TOOL_CALLS:
+            return f"[{name}] Call limit reached. Please synthesize final answer."
+        return fn(q)
+    return wrapped
+
+tools = []
+if vector_db is not None:
+    tools.append(Tool(
+        name="TesseraMiner",
+        func=tool_guard("TesseraMiner", search_knowledge_base),
+        description="Search scientific publications in TesseraStore."
+    ))
+tools.append(Tool(
     name="DataFinder",
-    func=search_osdr_database,
-    description="Use this tool to find raw datasets in the NASA Open Science Data Repository (OSDR). The query should be a simple keyword or project name, for example 'Bion-M1' or 'osteoclast'."
-)
+    func=tool_guard("DataFinder", search_osdr_database),
+    description="Find raw datasets in NASA OSDR by keyword or project name."
+))
 
-tools = [tessera_miner_tool, data_finder_tool]
-print(f"✅ Tools initialized: {[tool.name for tool in tools]}")
-
-# --- 2. INITIALIZE THE AGENT'S BRAIN (LLM) ---
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.2)
-print(f"✅ Main LLM (Gemini) initialized.")
-
-# --- 3. CREATE THE AGENT PROMPT ---
-prompt_template = """
+# --- AGENT ---
+@st.cache_resource(show_spinner=False)
+def build_agent(_tools):
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0.2)
+    prompt_template = """
 You are a specialized AI assistant for NASA called Biotessera.
-Your task is to answer questions about space biology based *only* on the information provided by your tools.
-When you find information, you MUST cite your sources. For TesseraMiner, cite the 'Source' title. For DataFinder, provide the 'Title' and 'Link'.
+Answer questions about space biology based ONLY on your tools.
+Always cite sources. For TesseraMiner, cite 'Source' title. For DataFinder, provide 'Title' and 'Link'.
+If you have used a tool 2 times and the result is similar, STOP using tools and produce the Final Answer with what you have.
 
 You have access to the following tools:
 {tools}
 
-To answer the user's question, you must use the following format:
-
+Use this format:
 Question: the user's input question
-Thought: you should always think about what to do. What is the user asking for? Do I need to use one tool or multiple tools?
-Action: the action to take, should be one of [{tool_names}]
+Thought: think about what to do
+Action: one of [{tool_names}]
 Action Input: the input to the action
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now know the final answer based on the observations.
-Final Answer: the final, comprehensive, and well-formatted answer to the original user question, with citations.
+Observation: the result
+... (repeat as needed)
+Thought: final reasoning
+Final Answer: well-formatted answer with citations.
 
 Begin!
 
 Question: {input}
 Thought:{agent_scratchpad}
 """
+    agent_prompt = PromptTemplate.from_template(prompt_template)
+    agent = create_react_agent(llm, _tools, agent_prompt)
+    executor = AgentExecutor(
+        agent=agent,
+        tools=_tools,
+        verbose=False,
+        handle_parsing_errors=True,
+        return_intermediate_steps=False,
+        max_iterations=4,
+        early_stopping_method="generate",
+    )
+    return executor
 
-agent_prompt = PromptTemplate.from_template(prompt_template)
+agent_executor = build_agent(tools)
 
-# --- 4. CREATE THE AGENT AND EXECUTOR ---
-biotessera_agent = create_react_agent(llm, tools, agent_prompt)
+# --- UI ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "last_prompt" not in st.session_state:
+    st.session_state.last_prompt = None
 
-agent_executor = AgentExecutor(agent=biotessera_agent, tools=tools, verbose=True)
-print("✅ Agent Executor created. Biotessera is ready!")
+for m in st.session_state.messages:
+    with st.chat_message(m["role"]):
+        st.markdown(m["content"])
 
-# --- 5. RUN A TEST ---
-if __name__ == '__main__':
-    print("\n--- Running a complex test query on the full agent ---")
-    test_query = "Summarize the effects of microgravity on bone loss and check if there are any datasets related to 'Bion-M1' in OSDR."
-    
-    response = agent_executor.invoke({
-        "input": test_query
-    })
+prompt = st.chat_input("Ask your question...")
+if prompt:
+    if st.session_state.last_prompt == prompt:
+        st.stop()
+    st.session_state.last_prompt = prompt
 
-    print("\n--- Agent's Final Answer ---")
-    print(response['output'])
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    tool_calls["TesseraMiner"] = 0
+    tool_calls["DataFinder"] = 0
+
+    with st.chat_message("assistant"):
+        with st.spinner("Biotessera is thinking..."):
+            try:
+                resp = agent_executor.invoke({"input": prompt})
+                text = resp.get("output", "Sorry, an error occurred.")
+            except Exception as e:
+                text = f"❌ Agent error: {e}"
+            st.markdown(text)
+            st.session_state.messages.append({"role": "assistant", "content": text})
